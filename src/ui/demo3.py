@@ -3,7 +3,7 @@ import json
 import streamlit as st
 import pandas as pd
 import plotly.figure_factory as ff
-from agent import agent2
+from agent import simple_agent
 
 st.set_page_config(layout="wide")
 st.title("🦜🔗 Quickstart App")
@@ -20,7 +20,7 @@ def render_user_message(content):
     """, unsafe_allow_html=True)
 
 
-def parse_display_message(raw_content: str):
+def parse_display_message(raw_content):
     try:
         obj = json.loads(raw_content)
         if isinstance(obj, dict) and "type" in obj:
@@ -34,7 +34,10 @@ def render_message(content):
     parsed = parse_display_message(content)
 
     if not parsed:
-        st.markdown(content)
+        if isinstance(content, (dict, list)):
+            st.json(content)
+        else:
+            st.markdown(content)
         return
 
     t = parsed["type"]
@@ -63,13 +66,14 @@ for msg in st.session_state.messages:
     if msg["role"] == "user":
         render_user_message(msg["content"])
     else:
-        st.chat_message(msg["role"]).write(msg["content"])
+        with st.chat_message(msg["role"]):
+            render_message(msg["content"])
 
 if prompt := st.chat_input():
     st.session_state.messages.append({"role": "user", "content": prompt})
     render_user_message(prompt)
 
-    for state in agent2.graph.stream({"messages": st.session_state.messages}):
+    for state in simple_agent.graph.stream({"messages": st.session_state.messages}):
         for key, value in state.items():
             #print(f"{key}: {value}")
             messages = value.get("messages", [])

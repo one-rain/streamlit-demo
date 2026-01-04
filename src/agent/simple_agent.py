@@ -1,4 +1,5 @@
 import json
+import os
 import uuid
 import pandas as pd
 import numpy as np
@@ -86,7 +87,9 @@ def call_model(state: MessagesState):
     print("start call model...")
     question = state["messages"][-1].content
 
-    medal_list = json.load(open("data/medal_list.json", "r", encoding="utf-8"))
+    # 项目根目录
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    medal_list = json.load(open(os.path.join(root_dir, "data/medal_list.json"), "r", encoding="utf-8"))
 
     if "图表" in question or "折线图" in question or "柱状图" in question:
         # 将 medal_list 转换为 图表数据格式，去掉key, 只保留value

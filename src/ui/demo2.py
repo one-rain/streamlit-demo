@@ -1,7 +1,7 @@
 import re
 import html
 import streamlit as st
-from agent import agent1
+from agent import openai_agent
 
 st.set_page_config(layout="wide")
 st.title("🦜🔗 Quickstart App")
@@ -33,7 +33,7 @@ if prompt := st.chat_input():
     assistant_box = st.chat_message("assistant")
     placeholder = assistant_box.empty()
     final_msg = ""
-    for state in agent1.graph.stream({"messages": st.session_state.messages}):
+    for state in openai_agent.graph.stream({"messages": st.session_state.messages}):
         print("="*20)
         print(f"\nstate: {state}\n")
         for key, value in state.items():
