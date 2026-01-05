@@ -25,8 +25,9 @@ def call_model(state: MessagesState):
     if "图表" in question or "折线图" in question or "柱状图" in question:
         # 将 medal_list 转换为 图表数据格式，去掉key, 只保留value
         tmp_data = [list(item.values()) for item in medal_list]
-        #out_data = DataProtocol(type=DataProtocolType.CHART, meta=ChartMeta(id=str(uuid.uuid4()), type=ChartType.BAR, title="奥运会奖牌榜", x="国家", y="奖牌数", series=["金牌", "银牌", "铜牌"], columns=["国家", "金牌", "银牌", "铜牌", "奖牌总数"]), data=tmp_data)
-        out_data = DataProtocol(type=DataProtocolType.CHART, meta=ChartMeta(id=str(uuid.uuid4()), type=ChartType.BAR, title="历届奥运会奖牌榜", x="国家", y="奖牌数", series=["金牌", "银牌", "铜牌", "奖牌总数"], columns=["年份", "国家", "金牌", "银牌", "铜牌", "奖牌总数"]), data=tmp_data)
+        #out_data = DataProtocol(type=DataProtocolType.CHART, meta=ChartMeta(id=str(uuid.uuid4()), type=ChartType.BAR, title="奥运会奖牌榜", x="国家", y="奖牌数", metrics=["金牌", "银牌", "铜牌"], columns=["国家", "金牌", "银牌", "铜牌", "奖牌总数"]), data=tmp_data)
+        # 自定义分组筛选
+        out_data = DataProtocol(type=DataProtocolType.CHART, meta=ChartMeta(id=str(uuid.uuid4()), type=ChartType.BAR, title="历届奥运会奖牌榜", x="年份", y="奖牌总数", metrics=["金牌", "银牌", "铜牌", "奖牌总数"], group=["国家"], columns=["年份", "国家", "金牌", "银牌", "铜牌", "奖牌总数"]), data=tmp_data)
         json_data = json.dumps(asdict(out_data), ensure_ascii=False, indent=2)
         return {"messages": [AIMessage(content=json_data)]}
     elif "表格" in question:

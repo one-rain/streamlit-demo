@@ -1,4 +1,5 @@
 from enum import StrEnum
+from tokenize import group
 from typing import List, Dict, Any
 from dataclasses import dataclass, field
 
@@ -26,7 +27,8 @@ class ChartMeta:
     title: str # 图表标题
     x: str | None = None # x轴字段名
     y: str | None = None # y轴字段名
-    series: List[str] = field(default_factory=list) # 系列字段名列表
+    metrics: List[str] = field(default_factory=list) # 指标字段名列表
+    group: List[str] | None = None # 分组字段名列表
     columns: List[str] = field(default_factory=list) # 列字段名列表
 
 @dataclass

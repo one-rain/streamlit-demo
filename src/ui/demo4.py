@@ -41,60 +41,63 @@ def chart_bar_simple(parsed: dict):
 
 def chart_bar_plotly(parsed: dict):
     df = pd.DataFrame(parsed["data"], columns=parsed["meta"]["columns"])
-    st.subheader(f"📊 自由维度数据探索器")
+    st.subheader("📊 自由维度数据探索器")
 
     meta = parsed.get("meta", {})
-    print(meta)
-    default_x = meta.get("x", "国家")
-    default_metrics = meta.get("series", ["奖牌总数"])
-    default_chart_type = meta.get("type", "bar")
     chart_id = meta.get("id")
+    default_x_field = "年份"
+    default_metrics = meta.get("metrics", meta.get("series", []))
+    default_group_options = meta.get("group", [])
+    default_chart_type = "bar" if meta.get("type") not in ["pie", "bar"] else meta.get("type")
+
+    # 生成年份选项
+    year_options = sorted(df[default_x_field].unique().tolist()) if default_x_field in df.columns else []
+
+    # Fallback 组维度选项
+    if not default_group_options:
+        all_cols = meta.get("columns", list(df.columns))
+        metric_set = set(default_metrics)
+        default_group_options = [c for c in all_cols if c != default_x_field and c not in metric_set]
 
     if not hasattr(st.session_state, "charts"):
         st.session_state["charts"] = {}
-    
     if chart_id not in st.session_state["charts"]:
         st.session_state["charts"][chart_id] = {
-            "x": default_x,
+            "x": year_options[0] if year_options else None,
             "metrics": default_metrics,
-            "columns": [],
+            "group": None,
             "type": default_chart_type
         }
-
     state = st.session_state["charts"][chart_id]
-    print(state)
-    
+
     with st.expander("图表配置", expanded=False):
         col1, col2 = st.columns(2)
         with col1:
-            x_dim = st.selectbox(
-                "X轴维度",
-                options=meta.get("columns", list(df.columns)),
-                index=(meta.get("columns", list(df.columns)).index(default_x) if default_x in meta.get("columns", list(df.columns)) else 0),
+            x_value = st.selectbox(
+                "年份",
+                options=year_options,
+                index=(year_options.index(state.get("x")) if state.get("x") in year_options else 0) if year_options else 0,
                 key=f"x_dim_{chart_id}"
             )
-
             chart_type = st.radio(
                 "图表类型",
-                ["bar", "line"],
-                index=["bar", "line"].index(state.get("type", default_chart_type)),
+                options=["pie", "bar"],
+                index=["pie", "bar"].index(state.get("type", default_chart_type)),
                 key=f"chart_{chart_id}",
                 horizontal=True
             )
-        
         with col2:
             y_metrics = st.multiselect(
-                "Y轴指标",
-                options=[c for c in df.columns if c != x_dim],
+                "指标(Y轴)",
+                options=default_metrics,
                 default=state.get("metrics", default_metrics),
                 key=f"metrics_{chart_id}"
             )
-
             group_col = st.selectbox(
-                "分组维度（columns）",
-                options=["无"] + [c for c in meta.get("columns", list(df.columns)) if c != x_dim],
+                "分组维度（group）",
+                options=["无"] + default_group_options,
                 index=0,
-                key=f"columns_{chart_id}"
+                key=f"group_{chart_id}"
             )
 
     if not y_metrics:
@@ -102,55 +105,71 @@ def chart_bar_plotly(parsed: dict):
         return
 
     group_dim = None if group_col == "无" else group_col
-
-    # ---------- 更新 state ----------
     state.update({
-        "x": x_dim,
+        "x": x_value,
         "metrics": y_metrics,
-        "columns": [group_dim] if group_dim else [],
+        "group": group_dim,
         "type": chart_type
     })
 
-    # ---------- 数据聚合 ----------
-    group_fields = [x_dim] + ([group_dim] if group_dim else [])
-    agg_df = df.groupby(group_fields)[y_metrics].sum().reset_index()
+    # 过滤到选定年份
+    df_year = df[df[default_x_field] == x_value] if x_value is not None else df
 
-    # ---------- 构造图表 ----------
-    if len(y_metrics) == 1:
-        y = y_metrics[0]
-
-        chart = (
-            alt.Chart(agg_df)
-            .mark_bar() if chart_type == "bar"
-            else alt.Chart(agg_df).mark_line(point=True)
-        ).encode(
-            x=alt.X(f"{x_dim}:O", title=x_dim),
-            y=alt.Y(f"{y}:Q", title=y),
-            color=group_dim if group_dim else alt.value("#4C78A8"),
-            tooltip=list(agg_df.columns)
+    # 饼图（使用第一个指标）
+    if chart_type == "pie":
+        metric = y_metrics[0]
+        slice_dim = group_dim if group_dim else (default_group_options[0] if default_group_options else None)
+        if not slice_dim:
+            st.warning("无可用分组维度用于饼图")
+            return
+        pie_df = df_year.groupby(slice_dim)[metric].sum().reset_index()
+        fig = px.pie(
+            pie_df,
+            values=metric,
+            names=slice_dim,
+            title=f"{x_value}年 {metric} 按 {slice_dim} 分布"
         )
+        fig.update_traces(textposition="inside", textinfo="percent+label")
+        st.plotly_chart(fig, use_container_width=True)
+        return
 
+    # 柱状图（支持单/多指标）
+    category_dim = group_dim if group_dim else (default_group_options[0] if default_group_options else None)
+    if not category_dim:
+        st.warning("无可用分组维度用于柱状图")
+        return
+
+    if len(y_metrics) == 1:
+        metric = y_metrics[0]
+        agg_df = df_year.groupby(category_dim)[metric].sum().reset_index()
+        fig = px.bar(
+            agg_df,
+            x=category_dim,
+            y=metric,
+            color=category_dim,
+            title=f"{x_value}年 各{category_dim}的 {metric}"
+        )
+        fig.update_traces(textposition="outside")
+        fig.update_layout(xaxis_title=category_dim, yaxis_title=metric)
+        st.plotly_chart(fig, use_container_width=True)
     else:
-        melted = agg_df.melt(
-            id_vars=group_fields,
+        melted = df_year.melt(
+            id_vars=[category_dim],
             value_vars=y_metrics,
             var_name="指标",
             value_name="值"
         )
-
-        chart = (
-            alt.Chart(melted)
-            .mark_bar() if chart_type == "bar"
-            else alt.Chart(melted).mark_line(point=True)
-        ).encode(
-            x=alt.X(f"{x_dim}:O", title=x_dim),
-            y=alt.Y("值:Q"),
-            color="指标:N",
-            column=group_dim if group_dim else alt.value(None),
-            tooltip=list(melted.columns)
+        fig = px.bar(
+            melted,
+            x=category_dim,
+            y="值",
+            color="指标",
+            barmode="group",
+            title=f"{x_value}年 各{category_dim}的多指标对比"
         )
-
-    st.altair_chart(chart, use_container_width=True)
+        fig.update_traces(textposition="outside")
+        fig.update_layout(xaxis_title=category_dim, yaxis_title="值")
+        st.plotly_chart(fig, use_container_width=True)
 
 
 def render_message(content):
