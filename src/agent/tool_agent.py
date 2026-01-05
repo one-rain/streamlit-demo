@@ -6,7 +6,7 @@ from dataclasses import asdict
 from langchain_core.messages import AIMessage, HumanMessage
 from langgraph.graph import StateGraph, MessagesState, START, END
 
-from agent.schema import ChartMeta, DataProtocol
+from agent.schema import DataPayload, DataProtocol
 
 
 def node_start(state: MessagesState):
@@ -25,15 +25,15 @@ def call_model(state: MessagesState):
     if "图表" in question or "折线图" in question or "柱状图" in question:
         # 将 medal_list 转换为 图表数据格式，去掉key, 只保留value
         tmp_data = [list(item.values()) for item in medal_list]
-        out_data = DataProtocol(type="chart", meta=ChartMeta(type="bar", title="奥运会奖牌榜", x="国家", y="奖牌数", series=["金牌", "银牌", "铜牌"], columns=["国家", "金牌", "银牌", "铜牌"]), data=tmp_data)
+        out_data = DataProtocol(type="chart", meta={"title": "奥运会奖牌榜"}, payload=DataPayload(chart_type="bar", x="国家", y="奖牌数", series=["金牌", "银牌", "铜牌"], columns=["国家", "金牌", "银牌", "铜牌"], data=tmp_data))
         json_data = json.dumps(asdict(out_data), ensure_ascii=False, indent=2)
         return {"messages": [AIMessage(content=json_data)]}
     elif "表格" in question:
-        out_data = DataProtocol(type="table", meta=ChartMeta(type="table", title="奥运会奖牌榜"), data=medal_list)
+        out_data = DataProtocol(type="table", meta={"title": "奥运会奖牌榜"}, payload=DataPayload(data=medal_list))
         json_data = json.dumps(asdict(out_data), ensure_ascii=False, indent=2)
         return {"messages": [AIMessage(content=json_data)]}
     elif "json" in question:
-        out_data = DataProtocol(type="json", meta=ChartMeta(type="json", title="奥运会奖牌榜"), data=medal_list)
+        out_data = DataProtocol(type="json", meta={"title": "奥运会奖牌榜"}, payload=DataPayload(data=medal_list))
         json_data = json.dumps(asdict(out_data), ensure_ascii=False, indent=2)
         return {"messages": [AIMessage(content=json_data)]}
     else: # 默认展示

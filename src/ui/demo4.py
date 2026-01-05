@@ -9,7 +9,7 @@ from agent import simple_agent
 
 st.set_page_config(layout="wide")
 st.title("🦜🔗 Quickstart App")
-st.caption("🚀基于返回类型的类型展示简易Demo")
+st.caption("🚀基于Tool Call 的简易Demo")
 
 def render_user_message(content):
     st.markdown(f"""
@@ -33,15 +33,15 @@ def parse_display_message(raw_content):
 
 def chart_bar_simple(parsed: dict):
     # 简易柱状图
-    df = pd.DataFrame(parsed["data"], columns=parsed["meta"]["columns"])
-    df = df.set_index(parsed["meta"]["x"])
-    st.bar_chart(df[parsed["meta"]["series"]], stack=False)
+    df = pd.DataFrame(parsed["data"], columns=parsed["columns"])
+    df = df.set_index(parsed["x"])
+    st.bar_chart(df[parsed["series"]], stack=False)
 
 def chart_bar_altair(parsed: dict):
-    df = pd.DataFrame(parsed["data"], columns=parsed["meta"]["columns"])
-    x_col = parsed["meta"]["x"]
-    y_col = parsed["meta"]["y"]
-    series = parsed.get("meta", {}).get("series", [])
+    df = pd.DataFrame(parsed["data"], columns=parsed["columns"])
+    x_col = parsed["x"]
+    y_col = parsed["y"]
+    series = parsed.get("series", [])
     if series and len(series) > 1:
         melted = df.melt(id_vars=[x_col], value_vars=series, var_name="类型", value_name="数值")
         chart = alt.Chart(melted).mark_bar().encode(
@@ -63,10 +63,10 @@ def chart_bar_altair(parsed: dict):
         st.altair_chart(chart, use_container_width=True)
 
 def chart_bar_plotly(parsed: dict):
-    df = pd.DataFrame(parsed["data"], columns=parsed["meta"]["columns"])
-    x_col = parsed["meta"]["x"]
-    y_col = parsed["meta"]["y"]
-    series = parsed.get("meta", {}).get("series", [])   
+    df = pd.DataFrame(parsed["data"], columns=parsed["columns"])
+    x_col = parsed["x"]
+    y_col = parsed["y"]
+    series = parsed.get("series", [])
     title = parsed.get("meta", {}).get("title", "")
 
     if series and len(series) > 1:
@@ -93,11 +93,11 @@ def render_message(content):
 
     t = parsed["type"]
     if t == "markdown":
-        st.markdown(parsed["data"])
+        st.markdown(parsed["payload"]["data"])
     elif t == "json":
-        st.json(parsed["data"])
+        st.json(parsed["payload"]["data"])
     elif t == "table":
-        st.dataframe(parsed["data"])
+        st.dataframe(parsed["payload"]["data"])
     elif t == "chart":
         # chart_bar_simple(parsed)
         # chart_bar_altair(parsed)
