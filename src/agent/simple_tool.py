@@ -14,10 +14,7 @@ def render_table_tool(columns: list, data: list, title: str = None) -> dict:
     """
     return {
         "type": "table",
-        "payload": {
-            "columns": columns,
-            "data": data
-        },
+        "data": data,
         "meta": {
             "title": title
         }

@@ -3,7 +3,6 @@ import json
 import streamlit as st
 import pandas as pd
 import altair as alt
-import plotly.figure_factory as ff
 import plotly.express as px
 from agent import simple_agent
 
@@ -43,12 +42,12 @@ def chart_bar_altair(parsed: dict):
     y_col = parsed["meta"]["y"]
     series = parsed.get("meta", {}).get("series", [])
     if series and len(series) > 1:
-        melted = df.melt(id_vars=[x_col], value_vars=series, var_name="类型", value_name="数值")
+        melted = df.melt(id_vars=[x_col], value_vars=series, var_name="🏅奖牌", value_name="奖牌数")
         chart = alt.Chart(melted).mark_bar().encode(
             x=alt.X(f"{x_col}:N"),
-            y=alt.Y("数值:Q"),
-            color="类型:N",
-            tooltip=[x_col, "类型", "数值"]
+            y=alt.Y("奖牌数:Q"),
+            color="🏅奖牌:N",
+            tooltip=[x_col, "🏅奖牌", "奖牌数"]
         )
         st.altair_chart(chart, use_container_width=True)
     else:
@@ -64,22 +63,32 @@ def chart_bar_altair(parsed: dict):
 
 def chart_bar_plotly(parsed: dict):
     df = pd.DataFrame(parsed["data"], columns=parsed["meta"]["columns"])
-    x_col = parsed["meta"]["x"]
-    y_col = parsed["meta"]["y"]
-    series = parsed.get("meta", {}).get("series", [])   
-    title = parsed.get("meta", {}).get("title", "")
+    # 指定坐标系
+    df_melted = df.melt(id_vars="国家", var_name="奖牌", value_name="奖牌数")
+    custom_colors = {
+        "中国": "#FF0000",  # 红色
+        "美国": "#002868",  # 蓝色
+        "英国": "#FFA500"   # 橙色
+    }
+    fig = px.bar(
+        df_melted, 
+        x="奖牌", 
+        y="奖牌数", 
+        color="国家", 
+        barmode="group",
+        title="各国奖牌分布图",
+        color_discrete_map=custom_colors,
+        category_orders={"奖牌": ["金牌", "银牌", "铜牌"]},  # 确保顺序正确
+        text_auto=True,  # 自动显示数值
+    )
 
-    if series and len(series) > 1:
-        # Plotly Express 自动处理宽表格式，y传列表即可
-        fig = px.bar(df, x=x_col, y=series, title=title, barmode="group")
-    else:
-        print("no series")
-        if y_col not in df.columns and series:
-            df[y_col] = df[series].sum(axis=1)
-        
-        fig = px.bar(df, x=x_col, y=y_col, title=title)
+    st.title("各国奖牌分布图")
+    idx = f"plotly_{parsed['meta']['type']}_{parsed['meta']['id']}"
+    st.plotly_chart(fig, key=idx)
+    with st.expander("查看当前数据详情"):
+        idx = f"table_{parsed['meta']['id']}"
+        st.dataframe(df, key=idx)
 
-    st.plotly_chart(fig, use_container_width=True)
 
 def render_message(content):
     parsed = parse_display_message(content)

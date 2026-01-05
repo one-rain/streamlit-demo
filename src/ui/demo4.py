@@ -3,13 +3,14 @@ import json
 import streamlit as st
 import pandas as pd
 import altair as alt
-import plotly.figure_factory as ff
 import plotly.express as px
 from agent import simple_agent
 
 st.set_page_config(layout="wide")
 st.title("🦜🔗 Quickstart App")
-st.caption("🚀基于Tool Call 的简易Demo")
+st.caption("🚀自由维度数据探索展示简易Demo")
+
+# 该方式会在页面左侧生成选项配置，如果有对话中有多个图表，将会导致选项配置冲突。所以，该方式不适合在对话中使用。
 
 def render_user_message(content):
     st.markdown(f"""
@@ -33,53 +34,124 @@ def parse_display_message(raw_content):
 
 def chart_bar_simple(parsed: dict):
     # 简易柱状图
-    df = pd.DataFrame(parsed["data"], columns=parsed["columns"])
-    df = df.set_index(parsed["x"])
-    st.bar_chart(df[parsed["series"]], stack=False)
+    df = pd.DataFrame(parsed["data"], columns=parsed["meta"]["columns"])
+    df = df.set_index(parsed["meta"]["x"])
+    st.bar_chart(df[parsed["meta"]["series"]], stack=False)
 
-def chart_bar_altair(parsed: dict):
-    df = pd.DataFrame(parsed["data"], columns=parsed["columns"])
-    x_col = parsed["x"]
-    y_col = parsed["y"]
-    series = parsed.get("series", [])
-    if series and len(series) > 1:
-        melted = df.melt(id_vars=[x_col], value_vars=series, var_name="类型", value_name="数值")
-        chart = alt.Chart(melted).mark_bar().encode(
-            x=alt.X(f"{x_col}:N"),
-            y=alt.Y("数值:Q"),
-            color="类型:N",
-            tooltip=[x_col, "类型", "数值"]
-        )
-        st.altair_chart(chart, use_container_width=True)
-    else:
-        print("no series")
-        if y_col not in df.columns and series:
-            df[y_col] = df[series].sum(axis=1)
-        chart = alt.Chart(df).mark_bar().encode(
-            x=alt.X(f"{x_col}:N"),
-            y=alt.Y(f"{y_col}:Q"),
-            tooltip=[x_col, y_col]
-        )
-        st.altair_chart(chart, use_container_width=True)
 
 def chart_bar_plotly(parsed: dict):
-    df = pd.DataFrame(parsed["data"], columns=parsed["columns"])
-    x_col = parsed["x"]
-    y_col = parsed["y"]
-    series = parsed.get("series", [])
-    title = parsed.get("meta", {}).get("title", "")
+    df = pd.DataFrame(parsed["data"], columns=parsed["meta"]["columns"])
+    st.subheader(f"📊 自由维度数据探索器")
 
-    if series and len(series) > 1:
-        # Plotly Express 自动处理宽表格式，y传列表即可
-        fig = px.bar(df, x=x_col, y=series, title=title, barmode="group")
-    else:
-        print("no series")
-        if y_col not in df.columns and series:
-            df[y_col] = df[series].sum(axis=1)
+    meta = parsed.get("meta", {})
+    print(meta)
+    default_x = meta.get("x", "国家")
+    default_metrics = meta.get("series", ["奖牌总数"])
+    default_chart_type = meta.get("type", "bar")
+    chart_id = meta.get("id")
+
+    if not hasattr(st.session_state, "charts"):
+        st.session_state["charts"] = {}
+    
+    if chart_id not in st.session_state["charts"]:
+        st.session_state["charts"][chart_id] = {
+            "x": default_x,
+            "metrics": default_metrics,
+            "columns": [],
+            "type": default_chart_type
+        }
+
+    state = st.session_state["charts"][chart_id]
+    print(state)
+    
+    with st.expander("图表配置", expanded=False):
+        col1, col2 = st.columns(2)
+        with col1:
+            x_dim = st.selectbox(
+                "X轴维度",
+                options=meta.get("columns", list(df.columns)),
+                index=(meta.get("columns", list(df.columns)).index(default_x) if default_x in meta.get("columns", list(df.columns)) else 0),
+                key=f"x_dim_{chart_id}"
+            )
+
+            chart_type = st.radio(
+                "图表类型",
+                ["bar", "line"],
+                index=["bar", "line"].index(state.get("type", default_chart_type)),
+                key=f"chart_{chart_id}",
+                horizontal=True
+            )
         
-        fig = px.bar(df, x=x_col, y=y_col, title=title)
+        with col2:
+            y_metrics = st.multiselect(
+                "Y轴指标",
+                options=[c for c in df.columns if c != x_dim],
+                default=state.get("metrics", default_metrics),
+                key=f"metrics_{chart_id}"
+            )
 
-    st.plotly_chart(fig, use_container_width=True)
+            group_col = st.selectbox(
+                "分组维度（columns）",
+                options=["无"] + [c for c in meta.get("columns", list(df.columns)) if c != x_dim],
+                index=0,
+                key=f"columns_{chart_id}"
+            )
+
+    if not y_metrics:
+        st.warning("请至少选择一个指标")
+        return
+
+    group_dim = None if group_col == "无" else group_col
+
+    # ---------- 更新 state ----------
+    state.update({
+        "x": x_dim,
+        "metrics": y_metrics,
+        "columns": [group_dim] if group_dim else [],
+        "type": chart_type
+    })
+
+    # ---------- 数据聚合 ----------
+    group_fields = [x_dim] + ([group_dim] if group_dim else [])
+    agg_df = df.groupby(group_fields)[y_metrics].sum().reset_index()
+
+    # ---------- 构造图表 ----------
+    if len(y_metrics) == 1:
+        y = y_metrics[0]
+
+        chart = (
+            alt.Chart(agg_df)
+            .mark_bar() if chart_type == "bar"
+            else alt.Chart(agg_df).mark_line(point=True)
+        ).encode(
+            x=alt.X(f"{x_dim}:O", title=x_dim),
+            y=alt.Y(f"{y}:Q", title=y),
+            color=group_dim if group_dim else alt.value("#4C78A8"),
+            tooltip=list(agg_df.columns)
+        )
+
+    else:
+        melted = agg_df.melt(
+            id_vars=group_fields,
+            value_vars=y_metrics,
+            var_name="指标",
+            value_name="值"
+        )
+
+        chart = (
+            alt.Chart(melted)
+            .mark_bar() if chart_type == "bar"
+            else alt.Chart(melted).mark_line(point=True)
+        ).encode(
+            x=alt.X(f"{x_dim}:O", title=x_dim),
+            y=alt.Y("值:Q"),
+            color="指标:N",
+            column=group_dim if group_dim else alt.value(None),
+            tooltip=list(melted.columns)
+        )
+
+    st.altair_chart(chart, use_container_width=True)
+
 
 def render_message(content):
     parsed = parse_display_message(content)
@@ -93,14 +165,12 @@ def render_message(content):
 
     t = parsed["type"]
     if t == "markdown":
-        st.markdown(parsed["payload"]["data"])
+        st.markdown(parsed["data"])
     elif t == "json":
-        st.json(parsed["payload"]["data"])
+        st.json(parsed["data"])
     elif t == "table":
-        st.dataframe(parsed["payload"]["data"])
+        st.dataframe(parsed["data"])
     elif t == "chart":
-        # chart_bar_simple(parsed)
-        # chart_bar_altair(parsed)
         chart_bar_plotly(parsed)
     else:
         print(f"Unknown type: {t}")
