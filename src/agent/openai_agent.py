@@ -2,7 +2,6 @@ import re
 import uuid
 import re
 from langchain_core.messages import AIMessage, HumanMessage
-from langchain_openai import ChatOpenAI
 from langgraph.graph import StateGraph, MessagesState, START, END
 from langchain.chat_models import init_chat_model
 from langchain_core.prompts import PromptTemplate

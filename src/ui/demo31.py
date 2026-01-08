@@ -1,61 +1,32 @@
-import html
 import json
+import uuid
 import streamlit as st
 import pandas as pd
-import altair as alt
 import plotly.express as px
-from agent import simple_agent
+from agent import simple2_agent
+from utils.common_util import render_user_message
 
 st.set_page_config(layout="wide")
 st.title("🦜🔗 Quickstart App")
 st.caption("🚀自由维度数据探索展示简易Demo")
 
-# 该方式会在页面左侧生成选项配置，如果有对话中有多个图表，将会导致选项配置冲突。所以，该方式不适合在对话中使用。
 
-def render_user_message(content):
-    st.markdown(f"""
-    <div style="display: flex; justify-content: flex-end; align-items: flex-start; margin-bottom: 1rem;">
-        <div style="background-color: #f0f2f6; color: #31333f; padding: 1rem; border-radius: 0.5rem; margin-right: 0.5rem; max-width: 70%; text-align: left;">
-            <div style="white-space: pre-wrap;">{html.escape(content)}</div>
-        </div>
-        <div style="font-size: 1.5rem; line-height: 1.5;">👤</div>
-    </div>
-    """, unsafe_allow_html=True)
-
-
-def parse_display_message(raw_content):
-    try:
-        obj = json.loads(raw_content)
-        if isinstance(obj, dict) and "type" in obj:
-            return obj
-    except Exception:
-        pass
-    return None
-
-def chart_bar_simple(parsed: dict):
-    # 简易柱状图
-    df = pd.DataFrame(parsed["data"], columns=parsed["meta"]["columns"])
-    df = df.set_index(parsed["meta"]["x"])
-    st.bar_chart(df[parsed["meta"]["series"]], stack=False)
-
-
-def chart_bar_plotly(parsed: dict):
-    df = pd.DataFrame(parsed["data"], columns=parsed["meta"]["columns"])
+def plotly_chart(chart_id: str, data: list[dict]):
+    columns=["年份", "国家", "金牌", "银牌", "铜牌", "奖牌总数"]
+    df = pd.DataFrame(data, columns=columns)
     st.subheader("📊 自由维度数据探索器")
 
-    meta = parsed.get("meta", {})
-    chart_id = meta.get("id")
     default_x_field = "年份"
-    default_metrics = meta.get("metrics", meta.get("series", []))
-    default_group_options = meta.get("group", [])
-    default_chart_type = "bar" if meta.get("type") not in ["pie", "bar"] else meta.get("type")
+    default_metrics = ["金牌", "银牌", "铜牌", "奖牌总数"]
+    default_group_options = ["国家"]
+    default_chart_type = "bar"
 
     # 生成年份选项
     year_options = sorted(df[default_x_field].unique().tolist()) if default_x_field in df.columns else []
 
     # Fallback 组维度选项
     if not default_group_options:
-        all_cols = meta.get("columns", list(df.columns))
+        all_cols = columns
         metric_set = set(default_metrics)
         default_group_options = [c for c in all_cols if c != default_x_field and c not in metric_set]
 
@@ -130,7 +101,7 @@ def chart_bar_plotly(parsed: dict):
             title=f"{x_value}年 {metric} 按 {slice_dim} 分布"
         )
         fig.update_traces(textposition="inside", textinfo="percent+label")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"pie_{chart_id}")
         return
 
     # 柱状图（支持单/多指标）
@@ -151,7 +122,7 @@ def chart_bar_plotly(parsed: dict):
         )
         fig.update_traces(textposition="outside")
         fig.update_layout(xaxis_title=category_dim, yaxis_title=metric)
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"bar1_{chart_id}")
     else:
         melted = df_year.melt(
             id_vars=[category_dim],
@@ -169,31 +140,16 @@ def chart_bar_plotly(parsed: dict):
         )
         fig.update_traces(textposition="outside")
         fig.update_layout(xaxis_title=category_dim, yaxis_title="值")
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, use_container_width=True, key=f"bar2_{chart_id}")
 
 
-def render_message(content):
-    parsed = parse_display_message(content)
-
-    if not parsed:
-        if isinstance(content, (dict, list)):
-            st.json(content)
-        else:
-            st.markdown(content)
-        return
-
-    t = parsed["type"]
-    if t == "markdown":
-        st.markdown(parsed["data"])
-    elif t == "json":
-        st.json(parsed["data"])
-    elif t == "table":
-        st.dataframe(parsed["data"])
-    elif t == "chart":
-        chart_bar_plotly(parsed)
+def render_assistant_message(content):
+    if content.startswith("{"):
+        obj_data = json.loads(content)
+        id = obj_data.get("id", "")
+        plotly_chart(id, obj_data.get("data", []))
     else:
-        print(f"Unknown type: {t}")
-        st.text(content)
+        st.markdown(content)
 
 if "messages" not in st.session_state:
     st.session_state["messages"] = [{"role": "assistant", "content": "How can I help you?"}]
@@ -203,19 +159,18 @@ for msg in st.session_state.messages:
         render_user_message(msg["content"])
     else:
         with st.chat_message(msg["role"]):
-            render_message(msg["content"])
+            render_assistant_message(msg["content"])
 
 if prompt := st.chat_input():
     st.session_state.messages.append({"role": "user", "content": prompt})
     render_user_message(prompt)
 
-    for state in simple_agent.graph.stream({"messages": st.session_state.messages}):
-        for key, value in state.items():
-            #print(f"{key}: {value}")
-            messages = value.get("messages", [])
-            msg_count = len(messages)
-            if msg_count > 0:
-                st.session_state.messages.append({"role": "assistant", "content": messages[-1].content})
-            for msg in messages:
-                raw_content = getattr(msg, "content", msg.get("content") if isinstance(msg, dict) else "")
-                render_message(raw_content)
+    with st.chat_message("assistant"):
+        for state in simple2_agent.graph1.stream({"messages": st.session_state.messages}):
+            for key, value in state.items():
+                #print(f"{key}: {value}")
+                messages = value.get("messages", [])
+                for message in messages:
+                    raw_content = getattr(message, "content", message.get("content") if isinstance(message, dict) else "")
+                    st.session_state.messages.append({"role": "assistant", "content": raw_content})
+                    render_assistant_message(raw_content)

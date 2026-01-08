@@ -1,38 +1,33 @@
 from enum import StrEnum
-from tokenize import group
-from typing import List, Dict, Any
+from typing import Any
 from dataclasses import dataclass, field
 
-class DataProtocolType(StrEnum):
-    """数据协议类型枚举，包含：code, 说明"""
+from langgraph.graph import MessagesState
+
+
+class DisplayType(StrEnum):
+    """数据协议类型枚举"""
     TABLE = "table"
     JSON = "json"
     CHART = "chart"
     MARKDOWN = "markdown"
     TEXT = "text"
-    IMAGES = "images"
+    IMAGE = "image"
+    LIVE = "live"
     VIDEO = "video"
-
-class ChartType(StrEnum):
-    """图表类型枚举，包含：code, 说明"""
-    BAR = "bar"
-    LINE = "line"
-    PIE = "pie"
-
+    PENDING = "pending"
+    ERROR = "error"
 
 @dataclass
-class ChartMeta:
-    id: str # 图表ID，用于唯一标识图表
-    type: ChartType # 图表类型，如：bar、line、pie等
-    title: str # 图表标题
-    x: str | None = None # x轴字段名
-    y: str | None = None # y轴字段名
-    metrics: List[str] = field(default_factory=list) # 指标字段名列表
-    group: List[str] | None = None # 分组字段名列表
-    columns: List[str] = field(default_factory=list) # 列字段名列表
+class DataMetaProtocol:
+    """数据元信息协议类"""
+    store_type: str # 存储类型 local、memory、redis、mysql等
+    store_key: str # 存储键，用于唯一标识数据
+    row_count: int # 数据行数
+    data: list[dict[str, Any]] = field(default_factory=list) # 数据内容
 
-@dataclass
-class DataProtocol:
-    type: DataProtocolType # 数据类型，如：table、chart、json、text等
-    data: List[Dict[str, Any]] = field(default_factory=list)
-    meta: ChartMeta | None = None # 图表元数据，仅当type为chart时有效
+
+class CustomState(MessagesState):
+    """自定义状态"""
+    type: DisplayType # 数据类型
+    data_meta: DataMetaProtocol # 数据元信息
