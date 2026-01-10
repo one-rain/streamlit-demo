@@ -30,11 +30,11 @@ def call_model(state: CustomState):
         data_meta = DataMetaProtocol(store_key=store_key, store_type="local", row_count=len(medal_list), data=medal_list)
     else:
         print(f"表格数据已发送到前端内存")
-        key = f"{CacheType.KEY_PAYLOAD_DATA}{store_key}"
+        key = f"{CacheType.KEY_PAYLOAD_DATA}:{store_key}"
         global_cache.set(key, medal_list, CacheType.HOT)
         data_meta = DataMetaProtocol(store_key=store_key, store_type="memory", row_count=len(medal_list))
     
-    return {"messages": [AIMessage(content="已经完成表格的提取。")], "data_meta": asdict(data_meta)}
+    return {"messages": [AIMessage(content="已经完成表格的提取。")], "data_meta": data_meta}
 
 
 graph2 = StateGraph(MessagesState)

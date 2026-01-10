@@ -5,7 +5,7 @@ import uuid
 from langchain_core.messages import HumanMessage
 
 from agent.data_agent import graph2
-from agent.simple1_agent import graph1
+from agent.barley_agent import graph1
 
 
 class TestAgent(TestCase):

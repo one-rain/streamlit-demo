@@ -5,3 +5,5 @@
 
 ## 参考
 - [Streamlit API Reference](https://docs.streamlit.io/develop/api-reference)
+- [plotly](https://plotly.com/python/bar-charts/)
+- [Vega Datasets](https://vega.github.io/vega-datasets/)

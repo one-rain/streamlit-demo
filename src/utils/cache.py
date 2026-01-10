@@ -8,10 +8,7 @@ class CacheType(StrEnum):
     SESSION = "session"
     FOREVER = "forever"
 
-    KEY_RESUME_GRAPH = "graph:" # 恢复/补全 graph 的关键标识
-    KEY_EXTRACTED_PARAMS = "query:" # 提取的查询参数缓存
-    KEY_FIELD_SCHEMAS = "fields:" # 字段 schema 缓存
-    KEY_PAYLOAD_DATA = "payload:" # 数据缓存
+    KEY_PAYLOAD_DATA = "payload" # 数据缓存
 
 
 class GlobalCache:
