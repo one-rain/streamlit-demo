@@ -30,4 +30,4 @@ class DataMetaProtocol:
 
 class CustomState(MessagesState):
     """自定义状态"""
-    data_meta: DataMetaProtocol # 数据元信息
+    data_meta: dict[str, Any] # 数据元信息，对应DataMetaProtocol

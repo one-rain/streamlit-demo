@@ -5,7 +5,7 @@ import pandas as pd
 import altair as alt
 import plotly.express as px
 import plotly.graph_objects as go
-from agent import barley_agent
+from agent.barley_agent import build_graph
 from utils.common_util import render_user_message
 
 
@@ -192,7 +192,7 @@ if prompt := st.chat_input():
     render_user_message(prompt)
 
     with st.chat_message("assistant"):
-        for state in barley_agent.graph1.stream({"messages": st.session_state.messages}):
+        for state in build_graph().stream({"messages": st.session_state.messages}):
             for key, value in state.items():
                 #print(f"{key}: {value}")
                 messages = value.get("messages", [])

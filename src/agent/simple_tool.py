@@ -1,6 +1,5 @@
 
 
-
 def render_table_tool(columns: list, data: list, title: str = None) -> dict:
     """渲染表格
     

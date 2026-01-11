@@ -20,7 +20,7 @@ def call_model(state: CustomState):
 
     # 项目根目录
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    medal_list = json.load(open(os.path.join(root_dir, "data/medal_list1.json"), "r", encoding="utf-8"))
+    medal_list = json.load(open(os.path.join(root_dir, "data/medal_long.json"), "r", encoding="utf-8"))
     store_key = str(uuid.uuid4())
     
     # 随机判断store_key的奇偶性
@@ -29,7 +29,7 @@ def call_model(state: CustomState):
         print(f"表格数据已发送到前端本地")
         data_meta = DataMetaProtocol(store_key=store_key, store_type="local", row_count=len(medal_list), data=medal_list)
     else:
-        print(f"表格数据已发送到前端内存")
+        print(f"表格数据已发送到前端内存") # 模拟重新请求获取数据
         key = f"{CacheType.KEY_PAYLOAD_DATA}:{store_key}"
         global_cache.set(key, medal_list, CacheType.HOT)
         data_meta = DataMetaProtocol(store_key=store_key, store_type="memory", row_count=len(medal_list))

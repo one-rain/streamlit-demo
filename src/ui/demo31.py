@@ -1,8 +1,10 @@
 import json
+import uuid
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from agent import medal_agent
+from agent.medal_agent import build_graph
+from utils.cache import CacheType, global_cache
 from utils.common_util import render_user_message
 
 st.set_page_config(layout="wide")
@@ -109,24 +111,35 @@ def plotly_chart(chart_id: str, data: list[dict]):
     st.plotly_chart(fig, width="stretch", key=f"bar2_{chart_id}")
 
 
-def render_assistant_message(content):
-    if content.startswith("{"):
-        obj_data = json.loads(content)
-        id = obj_data.get("id", "")
-        plotly_chart(id, obj_data.get("data", []))
-    else:
-        st.markdown(content)
+def render_assistant_message(content: list[str], data_meta: dict):
+    for item in content:
+        st.markdown(item)
+    
+    data = None
+    if data_meta and data_meta.get("store_type") == "local":
+        st.markdown("#### 本地图表")
+        store_key = str(uuid.uuid4())
+        data = data_meta.get("data", [])
+    elif data_meta and data_meta.get("store_type") == "memory":
+        st.markdown("#### 内存图表")
+        store_key = data_meta.get("store_key", "")
+        key = f"{CacheType.KEY_PAYLOAD_DATA}:{store_key}"
+        data = global_cache.get(key, CacheType.HOT)
+    
+    if data:
+        plotly_chart(store_key, data)
+
 
 if "messages" not in st.session_state:
-    st.session_state["messages"] = [{"role": "assistant", "content": ["How can I help you?"]}]
+    st.session_state["messages"] = [{"role": "assistant", "content": ["请输入问题，我会尽力回答。"], "data_meta": {}}]
+
 
 for msg in st.session_state.messages:
     if msg["role"] == "user" or msg["role"] == "human":
         render_user_message(msg["content"])
     else:
         with st.chat_message("assistant"):
-            for content in msg["content"]:
-                render_assistant_message(content)
+            render_assistant_message(msg["content"], msg["data_meta"])
 
 
 if prompt := st.chat_input():
@@ -134,7 +147,9 @@ if prompt := st.chat_input():
     render_user_message(prompt)
 
     with st.chat_message("assistant"):
-        for state in medal_agent.graph1.stream({"messages": st.session_state.messages}):
+        for state in build_graph().stream({"messages": prompt}, 
+            config={"configurable": {"data_type": "medal_width", "store_type": "local"}}
+        ):
             for key, value in state.items():
                 #print(f"{key}: {value}")
                 messages = value.get("messages", [])
@@ -142,5 +157,6 @@ if prompt := st.chat_input():
                 for message in messages:
                     raw_content = getattr(message, "content", message.get("content") if isinstance(message, dict) else "")
                     contents.append(raw_content)
-                    render_assistant_message(raw_content)
-                st.session_state.messages.append({"role": "assistant", "content": contents})
+                
+                render_assistant_message(contents, value.get("data_meta", {}))
+                st.session_state.messages.append({"role": "assistant", "content": contents, "data_meta": value.get("data_meta", {})})
