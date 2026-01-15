@@ -1,0 +1,22 @@
+[
+    {"date": "2024-01-01", "company":"DaGeDa", "name":"app1", "dau": 1210, "dnu": 10},
+    {"date": "2024-01-01", "company":"DaGeDa", "name":"app2", "dau": 2350, "dnu": 20},
+    {"date": "2024-01-01", "company":"XiaoGeXiao", "name":"app1", "dau": 2120, "dnu": 11},
+    {"date": "2024-01-01", "company":"XiaoGeXiao", "name":"app2", "dau": 2620, "dnu": 27},
+    {"date": "2024-01-02", "company":"DaGeDa", "name":"app1", "dau": 1291, "dnu": 12},
+    {"date": "2024-01-02", "company":"DaGeDa", "name":"app2", "dau": 2203, "dnu": 24},
+    {"date": "2024-01-02", "company":"XiaoGeXiao", "name":"app1", "dau": 1210, "dnu": 13},
+    {"date": "2024-01-02", "company":"XiaoGeXiao", "name":"app2", "dau": 2341, "dnu": 25},
+    {"date": "2024-01-03", "company":"DaGeDa", "name":"app1", "dau": 2123, "dnu": 14},
+    {"date": "2024-01-03", "company":"DaGeDa", "name":"app2", "dau": 2622, "dnu": 26},
+    {"date": "2024-01-03", "company":"XiaoGeXiao", "name":"app1", "dau": 2231, "dnu": 15},
+    {"date": "2024-01-03", "company":"XiaoGeXiao", "name":"app2", "dau": 2201, "dnu": 28},
+    {"date": "2024-01-04", "company":"DaGeDa", "name":"app1", "dau": 2105, "dnu": 16},
+    {"date": "2024-01-04", "company":"DaGeDa", "name":"app2", "dau": 3228, "dnu": 29},
+    {"date": "2024-01-04", "company":"XiaoGeXiao", "name":"app1", "dau": 3115, "dnu": 17},
+    {"date": "2024-01-04", "company":"XiaoGeXiao", "name":"app2", "dau": 2207, "dnu": 30},
+    {"date": "2024-01-05", "company":"DaGeDa", "name":"app1", "dau": 3911, "dnu": 18},
+    {"date": "2024-01-05", "company":"DaGeDa", "name":"app2", "dau": 2226, "dnu": 31},
+    {"date": "2024-01-05", "company":"XiaoGeXiao", "name":"app1", "dau": 3122, "dnu": 19},
+    {"date": "2024-01-05", "company":"XiaoGeXiao", "name":"app2", "dau": 2210, "dnu": 32}
+]

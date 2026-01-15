@@ -4,8 +4,8 @@ import uuid
 
 from langchain_core.messages import HumanMessage
 
-from agent.data_agent import graph2
-from agent.barley_agent import graph1
+from agent.chart_agent import build_chart_graph
+from agent.openai_agent import graph
 
 
 class TestAgent(TestCase):
@@ -34,12 +34,12 @@ class TestAgent(TestCase):
         #for message in result_state.get("messages", []):
         #    message.pretty_print()
         
-        for chunk in graph1.stream({"messages": [HumanMessage(content=question)]}, config=config):
+        for chunk in graph.stream({"messages": [HumanMessage(content=question)]}, config=config):
             print("="*20)
             print(f"\nchunk: {chunk}\n")
 
     
-    def test_data_agent_graph(self):
+    def test_chart_agent_graph(self):
         config = {
             "configurable": {
                 "thread_id": str(uuid.uuid4()),
@@ -47,8 +47,8 @@ class TestAgent(TestCase):
         }
 
         question = "表格"        
-        for chunk in graph2.stream({"messages": [HumanMessage(content=question)]}, config=config):
+        for chunk in build_chart_graph().stream({"messages": [HumanMessage(content=question)]}, config=config):
             print("="*20)
             print(f"\nchunk: {chunk}\n")
 
-# python -m unittest tests.agent.common_test.TestAgent.test_simple_agent_graph
+# python -m unittest tests.agent.common_test.TestAgent.test_chart_agent_graph

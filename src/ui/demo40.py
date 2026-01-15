@@ -1,10 +1,9 @@
-from turtle import color
 import uuid
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from agent.medal_agent import build_graph
+from agent.medal_agent import build_medal_graph
 from utils.cache import CacheType, global_cache
 from utils.common_util import render_user_message
 
@@ -189,7 +188,7 @@ if prompt := st.chat_input():
     render_user_message(prompt)
 
     with st.chat_message("assistant"):
-        for state in build_graph().stream({"messages": prompt}, config=config):
+        for state in build_medal_graph().stream({"messages": prompt}, config=config):
             for key, value in state.items():
                 #print(f"{key}: {value}")
                 messages = value.get("messages", [])

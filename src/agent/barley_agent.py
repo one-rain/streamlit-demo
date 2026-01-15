@@ -28,7 +28,7 @@ def call_model(state: MessagesState):
     return {"messages": [AIMessage(content="获取到数据, 如下："), AIMessage(content=json.dumps(data_json, ensure_ascii=False))]}
 
 
-def build_graph():
+def build_barley_graph():
     graph1 = StateGraph(MessagesState)
     graph1.add_node("start", node_start)
     graph1.add_node("model", call_model)
