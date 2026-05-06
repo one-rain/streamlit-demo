@@ -1,16 +1,18 @@
 {
-  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
   "python.analysis.extraPaths": [
     "${workspaceFolder}/src"
   ],
   "python.envFile": "${workspaceFolder}/.env",
   "terminal.integrated.env.osx": {
+    "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}",
     "PYTHONPATH": "${workspaceFolder}/src"
   },
   "terminal.integrated.env.linux": {
+    "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}",
     "PYTHONPATH": "${workspaceFolder}/src"
   },
   "terminal.integrated.env.windows": {
+    "PATH": "${workspaceFolder}\\.venv\\Scripts;${env:PATH}",
     "PYTHONPATH": "${workspaceFolder}/src"
   },
   "python.testing.unittestEnabled": true,
@@ -31,5 +33,6 @@
   "editor.rename.enablePreview": true,
   "workbench.editor.enablePreview": false,
   "editor.fontFamily": "'Fira Code', 'JetBrains Mono', Menlo, Monaco, 'Courier New'",
-  "editor.fontSize": 14
+  "editor.fontSize": 14,
+  "terminal.integrated.fontFamily": "MesloLGS NF"
 }

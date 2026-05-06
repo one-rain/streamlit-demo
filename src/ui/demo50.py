@@ -169,13 +169,16 @@ def render_table(id: str, chart_spec: dict):
     field_schemas = chart_spec["dataset"]["field_schemas"]
     columns_dict = {}
     columns = []
+    df = pd.DataFrame(chart_spec["dataset"]["data"])
     for schema in field_schemas:
-        columns_dict[schema["name"]] = schema["title"]
-        columns.append(schema["name"])
+        if schema["name"] in df.columns:
+            columns_dict[schema["name"]] = schema["title"]
+            if schema["display"]:
+                columns.append(schema["title"])
 
-    df = pd.DataFrame(chart_spec["dataset"]["data"], columns=columns)
     df.rename(columns=columns_dict, inplace=True)
-    st.dataframe(df, hide_index=True, key=f"table_{id}")
+    # 默认显示指定的列
+    st.dataframe(df, hide_index=True, key=f"table_{id}", column_order=columns)
 
 
 def render_assistant_message(chart_id: str, content: list[str], chart_spec: dict):

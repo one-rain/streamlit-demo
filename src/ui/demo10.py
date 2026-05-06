@@ -1,7 +1,7 @@
 import streamlit as st
 from vega_datasets import data
 
-
+# 简易数据展示
 with st.chat_message("assistant"):
     st.write("Hello human")
     st.write(f"当前语言：{st.context.locale}")

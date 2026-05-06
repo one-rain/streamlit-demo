@@ -3,8 +3,6 @@ import os
 import random
 import time
 from langchain.chat_models import init_chat_model
-from narwhals._compliant import column
-import pandas as pd
 
 from langchain_core.messages import AIMessage
 from langgraph.graph import StateGraph, MessagesState, START, END
